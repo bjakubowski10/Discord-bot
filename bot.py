@@ -1,6 +1,5 @@
 import discord #import discord.py, allows access to discords api
 import os #used for getting the variable form the .env file
-import newskey #api key
 import json #needed to go through the websites
 import ssl #will be used to ignore ssl certs
 from dotenv import load_dotenv
@@ -94,21 +93,39 @@ async def wsj(interaction: discord.Interaction,number : int):
     img1.clear()    
   
   
-#bot.  
-#@bot.tree.command(name = 'Newsfeed',description = 'Set up an automatic newsfeed in this channel')  
-@tasks.loop(hours = 2)
+  
+bot.news_to_post = list()
+bot.news_copy = list()  
+  
+@tasks.loop(hours=2)
 async def setup_newsfeed():
     async with aiohttp.ClientSession() as session:
         async with session.get("https://newsdata.io/api/1/news?apikey="+newsD+"&domain=cointelegraph") as resp:
             jsondata = await resp.json()
-    article = jsondata['articles']
-    embedurl = article[0]['link']
-    headline = article[0]['title']
-    img = article[0]['image_url']
             
-
-#continue this later, gotta have my news be posted  
-  
+    channel = bot.get_channel(1089512893164290048) 
+           
+    article = jsondata['results']
+    for data in article:
+        if (data['title'],data['link'],data['image_url']) not in bot.news_to_post:
+            bot.news_to_post.append((data['title'],data['link'],data['image_url']))
+           
+        
+    for i in bot.news_to_post:
+        if i not in bot.news_copy:
+            embed = discord.Embed(title = i[0],url = i[1],description = f'Read the full article here...[LINK TO ARTICLE]({i[1]})\n\n')
+            embed.set_image(url = i[2])
+            embed.set_author(name = bot.user,icon_url = bot.user.avatar)
+            embed.set_thumbnail(url=bot.user.avatar)
+            embed.set_footer(text="Source: cointelegraph.com")
+            await channel.send(embed=embed)
+            bot.news_copy.append(i)   
+        
+            
+@setup_newsfeed.before_loop
+async def beforenews():
+    await bot.wait_until_ready()            
+          
         
     
 @bot.tree.command(name="coinnews",description="display top 5 headlines from Cointelegraph")
@@ -163,13 +180,13 @@ async def weekly_json_grabber():
 bot.us_east = timezone('US/Eastern')
 bot.seconds_in_day=86400
         
-@tasks.loop(hours=24)
+@tasks.loop(hours=5)
 async def data_checker(): 
     count = 0
-    print(bot.datadates)
+    #print(bot.datadates)
     for tup in reversed(bot.datadates):
         count+=1
-        print(count)
+        #print(count)
         datetime_obj = datetime.datetime.fromisoformat(tup[0])
         curr_time = datetime.datetime.now(bot.us_east).replace(microsecond=0)
         if (datetime_obj - curr_time).total_seconds() < bot.seconds_in_day:
@@ -180,9 +197,11 @@ async def data_checker():
             embed.set_footer(text= "Click the title for a link to the event calendar") 
             channel = bot.get_channel(1089512893164290048)
             #await channel.send(f'{channel.guild.default_role}',embed=embed)
-            await channel.send(embed=embed)
+            await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
+
+            #await channel.send(embed=embed)
             bot.datadates.remove(tup)
-        print(bot.datadates)    
+        #print(bot.datadates)    
             
 @data_checker.before_loop
 async def beforerunning():
@@ -190,13 +209,15 @@ async def beforerunning():
             
                     
   
-
+#BEST WAY TO TEST THIS IS TO WAIT TILL ITS LIKE 10PM TODAY AND THEN RUN IT AND SEE IF IT WORKS
+#and test on a small interval to see if shit sends multiple times
 
 #the main function that runs the bot and the tasks in the background       
 async def main():
     discord.utils.setup_logging()#shows all the errors
     weekly_json_grabber.start()
     data_checker.start()
+    setup_newsfeed.start()
     await bot.start(os.getenv('DISCORD_TOKEN'))
 asyncio.run(main()) 
     
