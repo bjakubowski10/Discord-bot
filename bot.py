@@ -158,6 +158,7 @@ async def run_above_funcs2():
 @tasks.loop(hours=24) 
 async def weekly_json_grabber():
     await run_above_funcs2()
+   
        
 bot.us_east = timezone('US/Eastern')
 bot.seconds_in_day=86400
@@ -171,16 +172,17 @@ async def data_checker():
         print(count)
         datetime_obj = datetime.datetime.fromisoformat(tup[0])
         curr_time = datetime.datetime.now(bot.us_east).replace(microsecond=0)
-        if (curr_time - datetime_obj).total_seconds() < bot.seconds_in_day:
+        if (datetime_obj - curr_time).total_seconds() < bot.seconds_in_day:
             
             embed = discord.Embed(title = 'Important event is happening soon!',url ='https://www.cryptocraft.com/calendar',description = f'{tup[1]} {tup[2]} at {datetime_obj.strftime("%I:%M%p %d/%m/%y ")}' )
             embed.set_author(name=bot.user,icon_url=bot.user.avatar)
             embed.set_thumbnail(url=bot.user.avatar)
             embed.set_footer(text= "Click the title for a link to the event calendar") 
-            channel = bot.get_channel(1052375001606660156)
-            await channel.send(f'{channel.guild.default_role}',embed=embed)
-            #await channel.send(embed=embed)
+            channel = bot.get_channel(1089512893164290048)
+            #await channel.send(f'{channel.guild.default_role}',embed=embed)
+            await channel.send(embed=embed)
             bot.datadates.remove(tup)
+        print(bot.datadates)    
             
 @data_checker.before_loop
 async def beforerunning():
