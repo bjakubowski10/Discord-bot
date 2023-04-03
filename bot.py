@@ -21,6 +21,7 @@ load_dotenv()#loads the env file
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 
 #gets the client object form discord.py, client is synonymous with bot
 #bot = discord.Client(intents=intents)
@@ -99,19 +100,19 @@ bot.news_copy = list()
   
 @tasks.loop(hours=2)
 async def setup_newsfeed():
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession() as session:#grab the json with aiohttp lib
         async with session.get("https://newsdata.io/api/1/news?apikey="+newsD+"&domain=cointelegraph") as resp:
             jsondata = await resp.json()
             
-    channel = bot.get_channel(1089512893164290048) 
+    channel = bot.get_channel(1058573318397116447) #get the crypto news channel
            
-    article = jsondata['results']
+    article = jsondata['results'] #if data not in the list yet, we append it
     for data in article:
         if (data['title'],data['link'],data['image_url']) not in bot.news_to_post:
             bot.news_to_post.append((data['title'],data['link'],data['image_url']))
            
         
-    for i in bot.news_to_post:
+    for i in bot.news_to_post:#we print the news thats not in the copied list and append to it to check later, not using a list would break the branch
         if i not in bot.news_copy:
             embed = discord.Embed(title = i[0],url = i[1],description = f'Read the full article here...[LINK TO ARTICLE]({i[1]})\n\n')
             embed.set_image(url = i[2])
@@ -121,13 +122,13 @@ async def setup_newsfeed():
             await channel.send(embed=embed)
             bot.news_copy.append(i)   
         
-            
+#wait until the bot is ready before we do anything            
 @setup_newsfeed.before_loop
 async def beforenews():
     await bot.wait_until_ready()            
           
         
-    
+#prints the top 5 headlines from the source    
 @bot.tree.command(name="coinnews",description="display top 5 headlines from Cointelegraph")
 @app_commands.describe(number="How many links out of 5?")
 async def coin(interaction: discord.Interaction,number : int):
@@ -154,7 +155,7 @@ async def coin(interaction: discord.Interaction,number : int):
 
 
 
-
+#grab the updated json
 bot.datadates = list()
 bot.json_url = 'https://nfs.faireconomy.media/cc_calendar_thisweek.json'
 async def grab_json_items():
@@ -162,16 +163,16 @@ async def grab_json_items():
         async with session.get(bot.json_url) as resp:
             jsondata = await resp.json()
             return jsondata
-def insert_json_into_tuple(needed_json):
+def insert_json_into_tuple(needed_json): #insert the data of high relevance into the list as long as its not in it 
     for data in needed_json:
         if data['impact'] == 'High' and (data['date'],data['title'],data['country']) not in bot.datadates:
             bot.datadates.append((data['date'],data['title'],data['country']))
 
-async def run_above_funcs2():
+async def run_above_funcs2():#run the above functions in executor to not be blocking
     needed_json = await grab_json_items()
     callback = functools.partial(insert_json_into_tuple,needed_json)
     await bot.loop.run_in_executor(None,callback)
-    
+#task that runs the above code every 24hours to not miss the new json    
 @tasks.loop(hours=24) 
 async def weekly_json_grabber():
     await run_above_funcs2()
@@ -179,7 +180,7 @@ async def weekly_json_grabber():
        
 bot.us_east = timezone('US/Eastern')
 bot.seconds_in_day=86400
-        
+#checks for the event that is happening in less than 24 hours and posts a notification about it        
 @tasks.loop(hours=5)
 async def data_checker(): 
     count = 0
@@ -195,7 +196,7 @@ async def data_checker():
             embed.set_author(name=bot.user,icon_url=bot.user.avatar)
             embed.set_thumbnail(url=bot.user.avatar)
             embed.set_footer(text= "Click the title for a link to the event calendar") 
-            channel = bot.get_channel(1089512893164290048)
+            channel = bot.get_channel(1052375001606660156)
             #await channel.send(f'{channel.guild.default_role}',embed=embed)
             await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
 
@@ -206,11 +207,18 @@ async def data_checker():
 @data_checker.before_loop
 async def beforerunning():
     await bot.wait_until_ready()
-            
+#wait for the bot to be ready before running the task       
                     
-  
-#BEST WAY TO TEST THIS IS TO WAIT TILL ITS LIKE 10PM TODAY AND THEN RUN IT AND SEE IF IT WORKS
-#and test on a small interval to see if shit sends multiple times
+@bot.event #bans people who join with account younger than a month
+async def on_member_join(member : discord.Member):
+    channel = bot.get_channel(1058562970810069103)
+    creation = member.created_at
+    if (discord.utils.utcnow() - creation).total_seconds() < 2628000:
+        await channel.send(f'Your account is too young {member.mention}. Goodbye!')
+        await member.ban(reason = "Account too young")
+        
+        
+        
 
 #the main function that runs the bot and the tasks in the background       
 async def main():
@@ -221,9 +229,7 @@ async def main():
     await bot.start(os.getenv('DISCORD_TOKEN'))
 asyncio.run(main()) 
     
-    
 #bot.run(os.getenv('DISCORD_TOKEN'),root_logger=True)
 
 
-          
           
