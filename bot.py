@@ -182,30 +182,31 @@ bot.us_east = timezone('US/Eastern')
 bot.seconds_in_day=86400
 bot.datadates_copy = list()
 #checks for the event that is happening in less than 24 hours and posts a notification about it        
-@tasks.loop(hours=5)
+@tasks.loop(hours = 4)
 async def data_checker(): 
     count = 0
     #print(bot.datadates)
-    for tup in reversed(bot.datadates):
+    if len(bot.datadates) >0:
+        for tup in reversed(bot.datadates):
         
-        if tup not in bot.datadates_copy:
-            count+=1
-            #print(count)
-            datetime_obj = datetime.datetime.fromisoformat(tup[0])
-            curr_time = datetime.datetime.now(bot.us_east).replace(microsecond=0)
-            if (datetime_obj - curr_time).total_seconds() < bot.seconds_in_day:
+            if tup not in bot.datadates_copy:
+                count+=1
+                #print(count)
+                datetime_obj = datetime.datetime.fromisoformat(tup[0])
+                curr_time = datetime.datetime.now(bot.us_east).replace(microsecond=0)
+                if (datetime_obj - curr_time).total_seconds() < bot.seconds_in_day and (datetime_obj - curr_time).total_seconds() > 0:
             
-                embed = discord.Embed(title = 'Important event is happening soon!',url ='https://www.cryptocraft.com/calendar',description = f'{tup[1]} {tup[2]} at {datetime_obj.strftime("%I:%M%p %d/%m/%y ")}' )
-                embed.set_author(name=bot.user,icon_url=bot.user.avatar)
-                embed.set_thumbnail(url=bot.user.avatar)
-                embed.set_footer(text= "Click the title for a link to the event calendar") 
-                channel = bot.get_channel(1052375001606660156)
-                bot.datadates_copy.append(tup)
-            #await channel.send(f'{channel.guild.default_role}',embed=embed)
-                await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
+                    embed = discord.Embed(title = 'Important event is happening soon!',url ='https://www.cryptocraft.com/calendar',description = f'{tup[1]} {tup[2]} at {datetime_obj.strftime("%I:%M%p %d/%m/%y ")}' )
+                    embed.set_author(name=bot.user,icon_url=bot.user.avatar)
+                    embed.set_thumbnail(url=bot.user.avatar)
+                    embed.set_footer(text= "Click the title for a link to the event calendar") 
+                    channel = bot.get_channel(1089512893164290048)
+                    bot.datadates_copy.append(tup)
+                    #await channel.send(f'{channel.guild.default_role}',embed=embed)
+                    #await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
 
-            #await channel.send(embed=embed)
-            bot.datadates.remove(tup)
+                    await channel.send(embed=embed)
+                    bot.datadates.remove(tup)
         #print(bot.datadates)    
             
 @data_checker.before_loop
