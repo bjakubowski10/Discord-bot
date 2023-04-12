@@ -200,12 +200,12 @@ async def data_checker():
                     embed.set_author(name=bot.user,icon_url=bot.user.avatar)
                     embed.set_thumbnail(url=bot.user.avatar)
                     embed.set_footer(text= "Click the title for a link to the event calendar") 
-                    channel = bot.get_channel(1089512893164290048)
+                    channel = bot.get_channel(1052375001606660156)
                     bot.datadates_copy.append(tup)
                     #await channel.send(f'{channel.guild.default_role}',embed=embed)
-                    #await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
+                    await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
 
-                    await channel.send(embed=embed)
+                    #await channel.send(embed=embed)
                     bot.datadates.remove(tup)
         #print(bot.datadates)    
             
