@@ -200,7 +200,7 @@ async def data_checker():
                     embed.set_author(name=bot.user,icon_url=bot.user.avatar)
                     embed.set_thumbnail(url=bot.user.avatar)
                     embed.set_footer(text= "Click the title for a link to the event calendar") 
-                    channel = bot.get_channel(1052375001606660156)
+                    channel = bot.get_channel(1096002821909909526)
                     bot.datadates_copy.append(tup)
                     #await channel.send(f'{channel.guild.default_role}',embed=embed)
                     await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
@@ -221,6 +221,7 @@ async def on_member_join(member : discord.Member):
     if (discord.utils.utcnow() - creation).total_seconds() < 2628000:
         await channel.send(f'Your account is too young {member.mention}. Goodbye!')
         await member.ban(reason = "Account too young")
+        
         
         
         
