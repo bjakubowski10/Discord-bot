@@ -168,16 +168,16 @@ def insert_json_into_tuple(needed_json): #insert the data of high relevance into
     conn = sqlite3.connect('eventstorage.sqlite')
     cur = conn.cursor()
     cur.execute('DROP TABLE IF EXISTS Events')
-    cur.execute('CREATE TABLE Events (datetime TEXT, event TEXT, country TEXT)')
+    cur.execute('CREATE TABLE Events (datetime TEXT, event TEXT, country TEXT, used INTEGER)')
 
     for data in needed_json:
         #if data['impact'] == 'High' and (data['date'],data['title'],data['country']) not in bot.datadates:
          #   bot.datadates.append((data['date'],data['title'],data['country']))
          if data['impact'] == 'High':
-             cur.execute('SELECT event FROM Events WHERE event = ?',(data['title'],))
+             cur.execute('SELECT event FROM Events WHERE event = ? AND datetime = ?',(data['title'],data['date']))
              row = cur.fetchone()
              if row is None:
-                 cur.execute('INSERT INTO Events (datetime,event,country) VALUES (?,?,?)',(data['date'],data['title'],data['country']))
+                 cur.execute('INSERT INTO Events (datetime,event,country,used) VALUES (?,?,?,?)',(data['date'],data['title'],data['country'],0))
                  conn.commit()
              else:
                  continue
@@ -197,7 +197,7 @@ bot.us_east = timezone('US/Eastern')
 bot.seconds_in_day=86400
 bot.datadates_copy = list()
 #checks for the event that is happening in less than 24 hours and posts a notification about it        
-@tasks.loop(hours = 4)
+@tasks.loop(hours=4)
 async def data_checker(): 
     #count = 0
     conn = sqlite3.connect('eventstorage.sqlite')
@@ -209,7 +209,14 @@ async def data_checker():
     for i in event_list:
         datetime_obj = datetime.datetime.fromisoformat(i[0])
         curr_time = datetime.datetime.now(bot.us_east).replace(microsecond=0)
-        if (datetime_obj - curr_time).total_seconds() < bot.seconds_in_day and (datetime_obj - curr_time).total_seconds() > 0:
+        cur.execute("SELECT used FROM Events WHERE datetime = ? AND event = ?", (i[0],i[1]))
+        checker_tup = cur.fetchone()
+        #print(checker_tup)
+        checker = checker_tup[0]
+        #print(checker)
+        
+        if (datetime_obj - curr_time).total_seconds() < bot.seconds_in_day and (datetime_obj - curr_time).total_seconds() > 0 and int(checker) == 0 :
+            #check if used table is not 1 cause if its one it was already printed
             
             embed = discord.Embed(title = 'Important event is happening soon!',url ='https://www.cryptocraft.com/calendar',description = f'{i[1]} {i[2]} at {datetime_obj.strftime("%I:%M%p %d/%m/%y ")}' )
             embed.set_author(name=bot.user,icon_url=bot.user.avatar)
@@ -219,6 +226,9 @@ async def data_checker():
             #bot.datadates_copy.append(tup)
                     #await channel.send(f'{channel.guild.default_role}',embed=embed)
             await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
+            #await channel.send(embed=embed)
+            cur.execute("UPDATE Events SET used = 1 WHERE datetime = ? AND event = ?",(i[0],i[1]))
+            conn.commit()
     cur.close()        
         
 
