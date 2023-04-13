@@ -120,7 +120,7 @@ async def setup_newsfeed():
             embed.set_author(name = bot.user,icon_url = bot.user.avatar)
             embed.set_thumbnail(url=bot.user.avatar)
             embed.set_footer(text="Source: cointelegraph.com")
-           # await channel.send(embed=embed) 
+            await channel.send(embed=embed) 
             bot.news_copy.append(i)   
         
 #wait until the bot is ready before we do anything            
@@ -181,8 +181,7 @@ def insert_json_into_tuple(needed_json): #insert the data of high relevance into
                  conn.commit()
              else:
                  continue
-    cur.close()      
-             #remember to uncomment the news cycle loop  
+    cur.close()  #remember to uncomment the news cycle loop  
 
 async def run_above_funcs2():#run the above functions in executor to not be blocking
     needed_json = await grab_json_items()
