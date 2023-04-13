@@ -13,6 +13,7 @@ from pytz import timezone
 import aiohttp
 import asyncio
 import functools
+import sqlite3
 
 
 
@@ -119,7 +120,7 @@ async def setup_newsfeed():
             embed.set_author(name = bot.user,icon_url = bot.user.avatar)
             embed.set_thumbnail(url=bot.user.avatar)
             embed.set_footer(text="Source: cointelegraph.com")
-            await channel.send(embed=embed)
+           # await channel.send(embed=embed) 
             bot.news_copy.append(i)   
         
 #wait until the bot is ready before we do anything            
@@ -164,9 +165,24 @@ async def grab_json_items():
             jsondata = await resp.json()
             return jsondata
 def insert_json_into_tuple(needed_json): #insert the data of high relevance into the list as long as its not in it 
+    conn = sqlite3.connect('eventstorage.sqlite')
+    cur = conn.cursor()
+    cur.execute('DROP TABLE IF EXISTS Events')
+    cur.execute('CREATE TABLE Events (datetime TEXT, event TEXT, country TEXT)')
+
     for data in needed_json:
-        if data['impact'] == 'High' and (data['date'],data['title'],data['country']) not in bot.datadates:
-            bot.datadates.append((data['date'],data['title'],data['country']))
+        #if data['impact'] == 'High' and (data['date'],data['title'],data['country']) not in bot.datadates:
+         #   bot.datadates.append((data['date'],data['title'],data['country']))
+         if data['impact'] == 'High':
+             cur.execute('SELECT event FROM Events WHERE event = ?',(data['title'],))
+             row = cur.fetchone()
+             if row is None:
+                 cur.execute('INSERT INTO Events (datetime,event,country) VALUES (?,?,?)',(data['date'],data['title'],data['country']))
+                 conn.commit()
+             else:
+                 continue
+    cur.close()      
+             #remember to uncomment the news cycle loop  
 
 async def run_above_funcs2():#run the above functions in executor to not be blocking
     needed_json = await grab_json_items()
@@ -184,30 +200,54 @@ bot.datadates_copy = list()
 #checks for the event that is happening in less than 24 hours and posts a notification about it        
 @tasks.loop(hours = 4)
 async def data_checker(): 
-    count = 0
-    #print(bot.datadates)
-    if len(bot.datadates) >0:
-        for tup in reversed(bot.datadates):
-        
-            if tup not in bot.datadates_copy:
-                count+=1
-                #print(count)
-                datetime_obj = datetime.datetime.fromisoformat(tup[0])
-                curr_time = datetime.datetime.now(bot.us_east).replace(microsecond=0)
-                if (datetime_obj - curr_time).total_seconds() < bot.seconds_in_day and (datetime_obj - curr_time).total_seconds() > 0:
+    #count = 0
+    conn = sqlite3.connect('eventstorage.sqlite')
+    cur = conn.cursor()
+    #cur.execute('DROP TABLE IF EXISTS Events')
+    #cur.execute('CREATE TABLE Events (datetime TEXT, event TEXT, country TEXT)')
+    result = cur.execute('SELECT * FROM Events')
+    event_list = result.fetchall()
+    for i in event_list:
+        datetime_obj = datetime.datetime.fromisoformat(i[0])
+        curr_time = datetime.datetime.now(bot.us_east).replace(microsecond=0)
+        if (datetime_obj - curr_time).total_seconds() < bot.seconds_in_day and (datetime_obj - curr_time).total_seconds() > 0:
             
-                    embed = discord.Embed(title = 'Important event is happening soon!',url ='https://www.cryptocraft.com/calendar',description = f'{tup[1]} {tup[2]} at {datetime_obj.strftime("%I:%M%p %d/%m/%y ")}' )
-                    embed.set_author(name=bot.user,icon_url=bot.user.avatar)
-                    embed.set_thumbnail(url=bot.user.avatar)
-                    embed.set_footer(text= "Click the title for a link to the event calendar") 
-                    channel = bot.get_channel(1096002821909909526)
-                    bot.datadates_copy.append(tup)
+            embed = discord.Embed(title = 'Important event is happening soon!',url ='https://www.cryptocraft.com/calendar',description = f'{i[1]} {i[2]} at {datetime_obj.strftime("%I:%M%p %d/%m/%y ")}' )
+            embed.set_author(name=bot.user,icon_url=bot.user.avatar)
+            embed.set_thumbnail(url=bot.user.avatar)
+            embed.set_footer(text= "Click the title for a link to the event calendar") 
+            channel = bot.get_channel(1096002821909909526)
+            #bot.datadates_copy.append(tup)
                     #await channel.send(f'{channel.guild.default_role}',embed=embed)
-                    await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
+            await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
+    cur.close()        
+        
+
+    #print(bot.datadates)
+    #if len(bot.datadates) >0:
+                
+     #   for tup in reversed(bot.datadates):
+            
+        
+      #      if tup not in bot.datadates_copy:
+       #         count+=1
+                #print(count)
+        #        datetime_obj = datetime.datetime.fromisoformat(tup[0])
+         #       curr_time = datetime.datetime.now(bot.us_east).replace(microsecond=0)
+          #      if (datetime_obj - curr_time).total_seconds() < bot.seconds_in_day and (datetime_obj - curr_time).total_seconds() > 0:
+            
+           #         embed = discord.Embed(title = 'Important event is happening soon!',url ='https://www.cryptocraft.com/calendar',description = f'{tup[1]} {tup[2]} at {datetime_obj.strftime("%I:%M%p %d/%m/%y ")}' )
+            #        embed.set_author(name=bot.user,icon_url=bot.user.avatar)
+             #       embed.set_thumbnail(url=bot.user.avatar)
+              #      embed.set_footer(text= "Click the title for a link to the event calendar") 
+               #     channel = bot.get_channel(1096002821909909526)
+                #    bot.datadates_copy.append(tup)
+                    #await channel.send(f'{channel.guild.default_role}',embed=embed)
+                 #   await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
 
                     #await channel.send(embed=embed)
-                    bot.datadates.remove(tup)
-        #print(bot.datadates)    
+                  #  bot.datadates.remove(tup)
+        #print(bot.datadates)
             
 @data_checker.before_loop
 async def beforerunning():
