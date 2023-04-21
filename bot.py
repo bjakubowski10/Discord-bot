@@ -116,7 +116,7 @@ async def vix(interaction : discord.Interaction):
     dataF = yf.download("^VIX",start = yr_ago,end=date,interval="1d")
     dataF.Open.iloc
     mpf.plot(dataF,type='line',title={"title" :'CBOE Volatility Index'},style = 'mike',ylabel = 'Price',tight_layout=True
-         ,savefig= dict(fname = "vixchart.png",bbox_inches="tight"))
+         ,savefig= dict(fname = "attachment://vixchart.png",bbox_inches="tight"))
     
     embed = discord.Embed(title = f'Current VIX : {current_vix} ({sentiment})')
     embed.set_image(url = 'vixchart.png')
