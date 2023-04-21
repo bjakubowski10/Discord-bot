@@ -101,6 +101,8 @@ async def wsj(interaction: discord.Interaction,number : int):
 async def vix(interaction : discord.Interaction):
     dataF = yf.download("^VIX",interval = "1m")
     dataF.Open.iloc
+    #print(dataF.iloc[:,:])
+
     #initializes the variable with the adjusted close data for the latest dataframe item grabbed
     current_vix = round(float(dataF.iat[-1,4]),2)
     sentiment = ''
@@ -115,14 +117,15 @@ async def vix(interaction : discord.Interaction):
     yr_ago = date - datetime.timedelta(days = 365)
     dataF = yf.download("^VIX",start = yr_ago,end=date,interval="1d")
     dataF.Open.iloc
+    #print(dataF.iloc[:,:])
     mpf.plot(dataF,type='line',title={"title" :'CBOE Volatility Index'},style = 'mike',ylabel = 'Price',tight_layout=True
-         ,savefig= dict(fname = "attachment://vixchart.png",bbox_inches="tight"))
-    
+         ,savefig= dict(fname = "vixchart.png",bbox_inches="tight"))
+    file = discord.File("vixchart.png",filename = "vixchart.png")
     embed = discord.Embed(title = f'Current VIX : {current_vix} ({sentiment})')
-    embed.set_image(url = 'vixchart.png')
+    embed.set_image(url = "attachment://vixchart.png")
     embed.set_author(name = bot.user,icon_url = bot.user.avatar)
     embed.set_thumbnail(url=bot.user.avatar)
-    await interaction.response.send_message(embed=embed)
+    await interaction.response.send_message(file = file, embed=embed)
     
       
   
@@ -136,7 +139,7 @@ async def setup_newsfeed():
             jsondata = await resp.json()
             
     channel = bot.get_channel(1058573318397116447) #get the crypto news channel
-           
+    #channel = bot.get_channel(1080258526129172492)      for testing purposes
     article = jsondata['results'] #if data not in the list yet, we append it
     for data in article:
         if (data['title'],data['link'],data['image_url']) not in bot.news_to_post:
