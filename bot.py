@@ -14,6 +14,9 @@ import aiohttp
 import asyncio
 import functools
 import sqlite3
+import yfinance as yf
+import pandas as pd
+import mplfinance as mpf
 
 
 
@@ -94,7 +97,34 @@ async def wsj(interaction: discord.Interaction,number : int):
     urltoembed.clear()
     img1.clear()    
   
-  
+@bot.tree.command(name = 'vix',description="display the current VIX")
+async def vix(interaction : discord.Interaction):
+    dataF = yf.download("^VIX",interval = "1m")
+    dataF.Open.iloc
+    #initializes the variable with the adjusted close data for the latest dataframe item grabbed
+    current_vix = round(float(dataF.iat[-1,4]),2)
+    sentiment = ''
+    if current_vix < 20:
+        sentiment = 'BULLISH'
+    else:
+        sentiment = 'BEARISH'    
+    
+    #downloads the data and puts it into a dataframe for the interval of 1 day in last 365 days
+    #then plots it
+    date = datetime.datetime.now()
+    yr_ago = date - datetime.timedelta(days = 365)
+    dataF = yf.download("^VIX",start = yr_ago,end=date,interval="1d")
+    dataF.Open.iloc
+    mpf.plot(dataF,type='line',title={"title" :'CBOE Volatility Index'},style = 'mike',ylabel = 'Price',tight_layout=True
+         ,savefig= dict(fname = "vixchart.png",bbox_inches="tight"))
+    
+    embed = discord.Embed(title = f'Current VIX : {current_vix} ({sentiment})')
+    embed.set_image(url = 'vixchart.png')
+    embed.set_author(name = bot.user,icon_url = bot.user.avatar)
+    embed.set_thumbnail(url=bot.user.avatar)
+    await interaction.response.send_message(embed=embed)
+    
+      
   
 bot.news_to_post = list()
 bot.news_copy = list()  
@@ -222,7 +252,7 @@ async def data_checker():
             embed.set_author(name=bot.user,icon_url=bot.user.avatar)
             embed.set_thumbnail(url=bot.user.avatar)
             embed.set_footer(text= "Click the title for a link to the event calendar") 
-            channel = bot.get_channel(1096002821909909526)
+            channel = bot.get_channel(1099021816250511410)
             #bot.datadates_copy.append(tup)
                     #await channel.send(f'{channel.guild.default_role}',embed=embed)
             await channel.send(f'{channel.guild.get_role(1052373829722320898).mention}',embed=embed)
