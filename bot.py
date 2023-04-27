@@ -200,8 +200,8 @@ async def grab_json_items():
 def insert_json_into_tuple(needed_json): #insert the data of high relevance into the list as long as its not in it 
     conn = sqlite3.connect('eventstorage.sqlite')
     cur = conn.cursor()
-    cur.execute('DROP TABLE IF EXISTS Events')
-    cur.execute('CREATE TABLE Events (datetime TEXT, event TEXT, country TEXT, used INTEGER)')
+    #cur.execute('DROP TABLE IF EXISTS Events')
+    cur.execute('CREATE TABLE IF NOT EXISTS Events (datetime TEXT, event TEXT, country TEXT, used INTEGER)')
 
     for data in needed_json:
         #if data['impact'] == 'High' and (data['date'],data['title'],data['country']) not in bot.datadates:
