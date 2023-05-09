@@ -49,7 +49,7 @@ def news():
         img1.append(url['urlToImage'])
             
 def coinnews():
-    main_url ="https://newsdata.io/api/1/news?apikey="+newsD+"&domain=cointelegraph"
+    main_url ="https://newsdata.io/api/1/news?apikey="+newsD+"&domain=cointelegraph&language=en"
     news1=requests.get(main_url).json()
     article = news1['results']
     for url in article:
@@ -135,7 +135,7 @@ bot.news_copy = list()
 @tasks.loop(hours=2)
 async def setup_newsfeed():
     async with aiohttp.ClientSession() as session:#grab the json with aiohttp lib
-        async with session.get("https://newsdata.io/api/1/news?apikey="+newsD+"&domain=cointelegraph") as resp:
+        async with session.get("https://newsdata.io/api/1/news?apikey="+newsD+"&domain=cointelegraph&language=en") as resp:
             jsondata = await resp.json()
             
     channel = bot.get_channel(1058573318397116447) #get the crypto news channel
